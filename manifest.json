@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Phil It In",
+  "version": "1.0.0",
+  "description": "Fill out forms with random but realistic information automatically",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["data-generator.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
+
