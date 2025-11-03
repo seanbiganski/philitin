@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Chrome Extension Icons</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .icon-preview {
+            display: inline-block;
+            margin: 20px;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            display: block;
+            margin: 10px auto;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Generate Chrome Extension Icons</h1>
+    <div class="info">
+        <p>This page will generate icons for your "Phil It In" Chrome extension.</p>
+        <p>Click the buttons below to download each icon size.</p>
+    </div>
+    
+    <div id="previews"></div>
+    
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const width = size;
+            const height = size;
+            
+            // Set canvas size
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Background gradient (blue to purple)
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, '#4285F4');
+            gradient.addColorStop(1, '#9C27B0');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw a form/document icon with a checkmark
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = Math.max(2, size / 32);
+            
+            // Draw form shape (rectangle)
+            const formWidth = width * 0.6;
+            const formHeight = height * 0.7;
+            const formX = (width - formWidth) / 2;
+            const formY = (height - formHeight) / 2;
+            
+            // Form background (slightly transparent)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillRect(formX, formY, formWidth, formHeight);
+            
+            // Form lines (simulating form fields)
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'rgba(66, 133, 244, 0.3)';
+            ctx.lineWidth = Math.max(1, size / 64);
+            
+            const lineSpacing = formHeight / 5;
+            for (let i = 1; i < 4; i++) {
+                const y = formY + lineSpacing * i;
+                ctx.beginPath();
+                ctx.moveTo(formX + formWidth * 0.2, y);
+                ctx.lineTo(formX + formWidth * 0.8, y);
+                ctx.stroke();
+            }
+            
+            // Draw checkmark (indicating "filled")
+            ctx.strokeStyle = '#4CAF50';
+            ctx.fillStyle = '#4CAF50';
+            ctx.lineWidth = Math.max(3, size / 21);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            const checkSize = size * 0.25;
+            const checkX = formX + formWidth * 0.75;
+            const checkY = formY + formHeight * 0.3;
+            
+            ctx.beginPath();
+            ctx.moveTo(checkX - checkSize * 0.3, checkY);
+            ctx.lineTo(checkX - checkSize * 0.1, checkY + checkSize * 0.3);
+            ctx.lineTo(checkX + checkSize * 0.3, checkY - checkSize * 0.2);
+            ctx.stroke();
+        }
+        
+        function downloadIcon(size, filename) {
+            const canvas = document.createElement('canvas');
+            drawIcon(canvas, size);
+            
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+        
+        // Create previews and download buttons
+        const sizes = [16, 48, 128];
+        const previewsDiv = document.getElementById('previews');
+        
+        sizes.forEach(size => {
+            const div = document.createElement('div');
+            div.className = 'icon-preview';
+            
+            const canvas = document.createElement('canvas');
+            drawIcon(canvas, size);
+            div.appendChild(canvas);
+            
+            const button = document.createElement('button');
+            button.textContent = `Download icon${size}.png`;
+            button.onclick = () => downloadIcon(size, `icon${size}.png`);
+            div.appendChild(button);
+            
+            previewsDiv.appendChild(div);
+        });
+    </script>
+</body>
+</html>
+
