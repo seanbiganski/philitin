@@ -92,6 +92,18 @@ To modify the extension:
 
 No build process required! This is a vanilla JavaScript Chrome extension that works directly from source.
 
+### Packaging for Chrome Web Store
+
+To create a package for Chrome Web Store submission:
+
+```bash
+npm run package
+```
+
+This will create a ZIP file (`philitin-v1.0.0.zip`) ready for upload to the Chrome Web Store.
+
+**See [PUBLISHING.md](./PUBLISHING.md) for detailed publishing instructions.**
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
