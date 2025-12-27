@@ -171,8 +171,14 @@
     return '';
   }
 
+  // Function to generate a password
+  function generatePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  }
+
   // Function to fill a single field
-  function fillField(field, fieldType) {
+  function fillField(field, fieldType, passwordValue = null) {
     if (!window.dataGenerator) {
       console.error('Data generator not available');
       return false;
@@ -253,9 +259,16 @@
         value = generator.generateWebsite();
         break;
       case 'password':
-        // Generate a random password
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-        value = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        // Use provided password value or generate a new one
+        if (passwordValue !== null && passwordValue !== undefined) {
+          value = passwordValue;
+          const fieldId = field.id || field.name || field.placeholder || 'unknown';
+          console.log(`[Phil It In] Using provided password for field (${fieldId}): "${passwordValue}"`);
+        } else {
+          value = generatePassword();
+          const fieldId = field.id || field.name || field.placeholder || 'unknown';
+          console.log(`[Phil It In] Generating new password for field (${fieldId}): "${value}"`);
+        }
         break;
       default:
         // For unknown fields, generate a generic text
@@ -318,6 +331,10 @@
     forms.forEach(form => {
       const fields = form.querySelectorAll('input, select, textarea');
       
+      // First, collect all password fields in this form
+      const passwordFields = [];
+      const otherFields = [];
+      
       fields.forEach(field => {
         // Skip hidden fields and submit buttons
         if (field.type === 'hidden' || field.type === 'submit' || field.type === 'button') {
@@ -334,7 +351,36 @@
           return;
         }
 
-        const fieldType = detectFieldType(field);
+        // Check if it's a password field - check actual type first, then detectFieldType
+        const isPasswordField = field.type === 'password' || detectFieldType(field) === 'password';
+        
+        if (isPasswordField) {
+          passwordFields.push(field);
+        } else {
+          const fieldType = detectFieldType(field);
+          otherFields.push({ field, fieldType });
+        }
+      });
+
+      // Generate one password for all password fields in this form
+      if (passwordFields.length > 0) {
+        const password = generatePassword();
+        console.log(`[Phil It In] Found ${passwordFields.length} password field(s) in form, generated password: "${password}"`);
+        passwordFields.forEach((field, index) => {
+          const fieldId = field.id || field.name || field.placeholder || `field-${index}`;
+          console.log(`[Phil It In] Filling password field #${index + 1} (${fieldId}) with password: "${password}"`);
+          fillField(field, 'password', password);
+          console.log(`[Phil It In] Password field #${index + 1} value after fill: "${field.value}"`);
+          filledCount++;
+        });
+        // Verify all passwords match
+        const allMatch = passwordFields.every(field => field.value === password);
+        const values = passwordFields.map(f => f.value);
+        console.log(`[Phil It In] Password verification - All fields match: ${allMatch}, Values: [${values.map(v => `"${v}"`).join(', ')}]`);
+      }
+
+      // Fill other fields normally
+      otherFields.forEach(({ field, fieldType }) => {
         if (fillField(field, fieldType)) {
           filledCount++;
         }
@@ -343,6 +389,11 @@
 
     // Also try to fill fields that might not be in forms
     const standaloneFields = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), select, textarea');
+    
+    // Collect password fields and other fields separately
+    const standalonePasswordFields = [];
+    const standaloneOtherFields = [];
+    
     standaloneFields.forEach(field => {
       // Skip search fields
       if (isSearchField(field)) {
@@ -352,7 +403,42 @@
       if (field.value && field.value.trim() !== '') {
         return;
       }
-      const fieldType = detectFieldType(field);
+      
+      // Skip fields that are already inside forms (they were handled above)
+      if (field.closest('form')) {
+        return;
+      }
+      
+      // Check if it's a password field - check actual type first, then detectFieldType
+      const isPasswordField = field.type === 'password' || detectFieldType(field) === 'password';
+      
+      if (isPasswordField) {
+        standalonePasswordFields.push(field);
+      } else {
+        const fieldType = detectFieldType(field);
+        standaloneOtherFields.push({ field, fieldType });
+      }
+    });
+
+    // Generate one password for all standalone password fields
+    if (standalonePasswordFields.length > 0) {
+      const password = generatePassword();
+      console.log(`[Phil It In] Found ${standalonePasswordFields.length} standalone password field(s), generated password: "${password}"`);
+      standalonePasswordFields.forEach((field, index) => {
+        const fieldId = field.id || field.name || field.placeholder || `standalone-field-${index}`;
+        console.log(`[Phil It In] Filling standalone password field #${index + 1} (${fieldId}) with password: "${password}"`);
+        fillField(field, 'password', password);
+        console.log(`[Phil It In] Standalone password field #${index + 1} value after fill: "${field.value}"`);
+        filledCount++;
+      });
+      // Verify all passwords match
+      const allMatch = standalonePasswordFields.every(field => field.value === password);
+      const values = standalonePasswordFields.map(f => f.value);
+      console.log(`[Phil It In] Standalone password verification - All fields match: ${allMatch}, Values: [${values.map(v => `"${v}"`).join(', ')}]`);
+    }
+
+    // Fill other standalone fields normally
+    standaloneOtherFields.forEach(({ field, fieldType }) => {
       if (fillField(field, fieldType)) {
         filledCount++;
       }
