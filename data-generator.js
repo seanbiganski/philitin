@@ -35,21 +35,64 @@ if (!window.dataGenerator) {
     this.streetNames = [
       'Main', 'Park', 'Oak', 'Maple', 'Cedar', 'Elm', 'Washington', 'Lincoln',
       'Jefferson', 'Madison', 'Jackson', 'Church', 'High', 'Broad', 'Market',
-      'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Park', 'Lake', 'River',
+      'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Lake', 'River',
       'Hill', 'Green', 'Spring', 'Summer', 'Sunset', 'Sunrise', 'Valley', 'Creek',
-      'Forest', 'Garden', 'Meadow', 'Ridge', 'Boulevard', 'Drive', 'Avenue', 'Street',
-      'Road', 'Lane', 'Circle', 'Court', 'Place', 'Way', 'Terrace', 'Trail'
+      'Forest', 'Garden', 'Meadow', 'Ridge', 'Willow', 'Dogwood', 'Birch', 'Pine'
     ];
 
-    this.cities = [
-      'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia',
-      'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville',
-      'Fort Worth', 'Columbus', 'Charlotte', 'San Francisco', 'Indianapolis',
-      'Seattle', 'Denver', 'Washington', 'Boston', 'El Paso', 'Detroit', 'Nashville',
-      'Portland', 'Oklahoma City', 'Las Vegas', 'Memphis', 'Louisville', 'Baltimore',
-      'Milwaukee', 'Albuquerque', 'Tucson', 'Fresno', 'Sacramento', 'Kansas City',
-      'Mesa', 'Atlanta', 'Omaha', 'Colorado Springs', 'Raleigh', 'Virginia Beach',
-      'Miami', 'Oakland', 'Minneapolis', 'Tulsa', 'Cleveland', 'Wichita', 'Arlington'
+    this.streetSuffixes = ['Street', 'Avenue', 'Road', 'Drive', 'Lane', 'Circle', 'Court', 'Place', 'Way'];
+
+    // City-to-state mapping for geographically coherent addresses
+    this.cityStateMap = [
+      { city: 'New York', state: 'New York', abbr: 'NY', zipPrefix: '100' },
+      { city: 'Los Angeles', state: 'California', abbr: 'CA', zipPrefix: '900' },
+      { city: 'Chicago', state: 'Illinois', abbr: 'IL', zipPrefix: '606' },
+      { city: 'Houston', state: 'Texas', abbr: 'TX', zipPrefix: '770' },
+      { city: 'Phoenix', state: 'Arizona', abbr: 'AZ', zipPrefix: '850' },
+      { city: 'Philadelphia', state: 'Pennsylvania', abbr: 'PA', zipPrefix: '191' },
+      { city: 'San Antonio', state: 'Texas', abbr: 'TX', zipPrefix: '782' },
+      { city: 'San Diego', state: 'California', abbr: 'CA', zipPrefix: '921' },
+      { city: 'Dallas', state: 'Texas', abbr: 'TX', zipPrefix: '752' },
+      { city: 'San Jose', state: 'California', abbr: 'CA', zipPrefix: '951' },
+      { city: 'Austin', state: 'Texas', abbr: 'TX', zipPrefix: '787' },
+      { city: 'Jacksonville', state: 'Florida', abbr: 'FL', zipPrefix: '322' },
+      { city: 'Fort Worth', state: 'Texas', abbr: 'TX', zipPrefix: '761' },
+      { city: 'Columbus', state: 'Ohio', abbr: 'OH', zipPrefix: '432' },
+      { city: 'Charlotte', state: 'North Carolina', abbr: 'NC', zipPrefix: '282' },
+      { city: 'San Francisco', state: 'California', abbr: 'CA', zipPrefix: '941' },
+      { city: 'Indianapolis', state: 'Indiana', abbr: 'IN', zipPrefix: '462' },
+      { city: 'Seattle', state: 'Washington', abbr: 'WA', zipPrefix: '981' },
+      { city: 'Denver', state: 'Colorado', abbr: 'CO', zipPrefix: '802' },
+      { city: 'Washington', state: 'District of Columbia', abbr: 'DC', zipPrefix: '200' },
+      { city: 'Boston', state: 'Massachusetts', abbr: 'MA', zipPrefix: '021' },
+      { city: 'El Paso', state: 'Texas', abbr: 'TX', zipPrefix: '799' },
+      { city: 'Detroit', state: 'Michigan', abbr: 'MI', zipPrefix: '482' },
+      { city: 'Nashville', state: 'Tennessee', abbr: 'TN', zipPrefix: '372' },
+      { city: 'Portland', state: 'Oregon', abbr: 'OR', zipPrefix: '972' },
+      { city: 'Oklahoma City', state: 'Oklahoma', abbr: 'OK', zipPrefix: '731' },
+      { city: 'Las Vegas', state: 'Nevada', abbr: 'NV', zipPrefix: '891' },
+      { city: 'Memphis', state: 'Tennessee', abbr: 'TN', zipPrefix: '381' },
+      { city: 'Louisville', state: 'Kentucky', abbr: 'KY', zipPrefix: '402' },
+      { city: 'Baltimore', state: 'Maryland', abbr: 'MD', zipPrefix: '212' },
+      { city: 'Milwaukee', state: 'Wisconsin', abbr: 'WI', zipPrefix: '532' },
+      { city: 'Albuquerque', state: 'New Mexico', abbr: 'NM', zipPrefix: '871' },
+      { city: 'Tucson', state: 'Arizona', abbr: 'AZ', zipPrefix: '857' },
+      { city: 'Fresno', state: 'California', abbr: 'CA', zipPrefix: '937' },
+      { city: 'Sacramento', state: 'California', abbr: 'CA', zipPrefix: '958' },
+      { city: 'Kansas City', state: 'Missouri', abbr: 'MO', zipPrefix: '641' },
+      { city: 'Mesa', state: 'Arizona', abbr: 'AZ', zipPrefix: '852' },
+      { city: 'Atlanta', state: 'Georgia', abbr: 'GA', zipPrefix: '303' },
+      { city: 'Omaha', state: 'Nebraska', abbr: 'NE', zipPrefix: '681' },
+      { city: 'Colorado Springs', state: 'Colorado', abbr: 'CO', zipPrefix: '809' },
+      { city: 'Raleigh', state: 'North Carolina', abbr: 'NC', zipPrefix: '276' },
+      { city: 'Virginia Beach', state: 'Virginia', abbr: 'VA', zipPrefix: '234' },
+      { city: 'Miami', state: 'Florida', abbr: 'FL', zipPrefix: '331' },
+      { city: 'Oakland', state: 'California', abbr: 'CA', zipPrefix: '946' },
+      { city: 'Minneapolis', state: 'Minnesota', abbr: 'MN', zipPrefix: '554' },
+      { city: 'Tulsa', state: 'Oklahoma', abbr: 'OK', zipPrefix: '741' },
+      { city: 'Cleveland', state: 'Ohio', abbr: 'OH', zipPrefix: '441' },
+      { city: 'Wichita', state: 'Kansas', abbr: 'KS', zipPrefix: '672' },
+      { city: 'Arlington', state: 'Texas', abbr: 'TX', zipPrefix: '760' }
     ];
 
     this.states = [
@@ -113,11 +156,23 @@ if (!window.dataGenerator) {
   }
 
   generateEmail(firstName = null, lastName = null) {
-    const first = firstName || this.generateFirstName().toLowerCase();
-    const last = lastName || this.generateLastName().toLowerCase();
+    const first = (firstName || this.generateFirstName()).toLowerCase();
+    const last = (lastName || this.generateLastName()).toLowerCase();
     const numbers = this.randomNumber(100, 9999);
     const domain = this.random(this.emailDomains);
     return `${first}.${last}${numbers}@${domain}`;
+  }
+
+  generateUsername(firstName = null, lastName = null) {
+    const first = (firstName || this.generateFirstName()).toLowerCase();
+    const last = (lastName || this.generateLastName()).toLowerCase();
+    const styles = [
+      () => `${first}${last}${this.randomNumber(1, 999)}`,
+      () => `${first}_${last}`,
+      () => `${first}.${last}${this.randomNumber(10, 99)}`,
+      () => `${first[0]}${last}${this.randomNumber(1, 99)}`,
+    ];
+    return this.random(styles)();
   }
 
   generatePhoneNumber() {
@@ -130,12 +185,12 @@ if (!window.dataGenerator) {
   generateStreetAddress() {
     const number = this.randomNumber(100, 9999);
     const street = this.random(this.streetNames);
-    const suffix = this.random(['Street', 'Avenue', 'Road', 'Drive', 'Lane', 'Circle', 'Court', 'Place', 'Way']);
+    const suffix = this.random(this.streetSuffixes);
     return `${number} ${street} ${suffix}`;
   }
 
   generateCity() {
-    return this.random(this.cities);
+    return this.random(this.cityStateMap).city;
   }
 
   generateState(abbr = false) {
@@ -147,14 +202,20 @@ if (!window.dataGenerator) {
     return this.randomNumber(10000, 99999).toString();
   }
 
-  generateAddress() {
+  generateCoherentAddress() {
+    const location = this.random(this.cityStateMap);
+    const zipSuffix = String(this.randomNumber(10, 99));
     return {
       street: this.generateStreetAddress(),
-      city: this.generateCity(),
-      state: this.generateState(),
-      stateAbbr: this.generateState(true),
-      zip: this.generateZipCode()
+      city: location.city,
+      state: location.state,
+      stateAbbr: location.abbr,
+      zip: location.zipPrefix + zipSuffix
     };
+  }
+
+  generateAddress() {
+    return this.generateCoherentAddress();
   }
 
   generateDateOfBirth() {
@@ -183,12 +244,14 @@ if (!window.dataGenerator) {
     }
     // Simple Luhn check digit
     number += this.randomNumber(0, 9);
+
+    const currentYear = new Date().getFullYear();
     return {
       number: number,
       type: type.name,
       cvv: this.randomNumber(100, 999).toString(),
       expiryMonth: String(this.randomNumber(1, 12)).padStart(2, '0'),
-      expiryYear: String(this.randomNumber(2025, 2030))
+      expiryYear: String(this.randomNumber(currentYear + 1, currentYear + 5))
     };
   }
 
@@ -206,9 +269,38 @@ if (!window.dataGenerator) {
     const subdomain = this.random(['www.', '']);
     return `${protocol}${subdomain}${this.random(domains)}`;
   }
+
+  generatePersona() {
+    const firstName = this.generateFirstName();
+    const lastName = this.generateLastName();
+    const address = this.generateCoherentAddress();
+    const card = this.generateCreditCard();
+    return {
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`,
+      username: this.generateUsername(firstName, lastName),
+      email: this.generateEmail(firstName, lastName),
+      phone: this.generatePhoneNumber(),
+      address: address.street,
+      city: address.city,
+      state: address.state,
+      stateAbbr: address.stateAbbr,
+      zip: address.zip,
+      country: 'United States',
+      company: this.generateCompany(),
+      website: this.generateWebsite(),
+      dob: this.generateDateOfBirth(),
+      ssn: this.generateSSN(),
+      creditCard: card.number,
+      creditCardType: card.type,
+      cvv: card.cvv,
+      expiryMonth: card.expiryMonth,
+      expiryYear: card.expiryYear,
+    };
   }
-  
+  }
+
   // Make it available globally
   window.dataGenerator = new RealisticDataGenerator();
 }
-

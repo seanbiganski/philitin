@@ -16,11 +16,11 @@
     const className = (field.className || '').toLowerCase();
     const role = (field.getAttribute('role') || '').toLowerCase();
     const ariaLabel = (field.getAttribute('aria-label') || '').toLowerCase();
-    
+
     // Check if field itself indicates search
-    if (role === 'search' || 
-        name.includes('search') || 
-        id.includes('search') || 
+    if (role === 'search' ||
+        name.includes('search') ||
+        id.includes('search') ||
         placeholder.includes('search') ||
         className.includes('search') ||
         ariaLabel.includes('search')) {
@@ -34,9 +34,9 @@
       const parentClass = (parent.className || '').toLowerCase();
       const parentRole = (parent.getAttribute('role') || '').toLowerCase();
       const parentTag = parent.tagName.toLowerCase();
-      
+
       // Check if parent is nav or contains search indicators
-      if (parentTag === 'nav' || 
+      if (parentTag === 'nav' ||
           parentRole === 'search' ||
           parentId.includes('search') ||
           parentClass.includes('search') ||
@@ -53,6 +53,17 @@
     }
 
     return false;
+  }
+
+  // Helper to set values in a way that works with React/Vue/Angular
+  function setNativeValue(element, value) {
+    const prototype = element.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
+    if (descriptor && descriptor.set) {
+      descriptor.set.call(element, value);
+    } else {
+      element.value = value;
+    }
   }
 
   // Function to trigger input events (so forms detect the changes)
@@ -89,14 +100,19 @@
       return 'password';
     }
 
+    // Username/login detection (before name detection to avoid false positive on "name")
+    if (combined.includes('username') || combined.includes('user-name') || combined.includes('user_name') || combined.includes('login') || combined.includes('userid') || combined.includes('user_id')) {
+      return 'username';
+    }
+
     // Name detection
-    if (combined.includes('firstname') || combined.includes('first-name') || combined.includes('fname')) {
+    if (combined.includes('firstname') || combined.includes('first-name') || combined.includes('fname') || combined.includes('first_name')) {
       return 'firstname';
     }
-    if (combined.includes('lastname') || combined.includes('last-name') || combined.includes('lname') || combined.includes('surname')) {
+    if (combined.includes('lastname') || combined.includes('last-name') || combined.includes('lname') || combined.includes('surname') || combined.includes('last_name')) {
       return 'lastname';
     }
-    if (combined.includes('fullname') || (combined.includes('name') && !combined.includes('user') && !combined.includes('company'))) {
+    if (combined.includes('fullname') || combined.includes('full_name') || (combined.includes('name') && !combined.includes('user') && !combined.includes('company'))) {
       return 'fullname';
     }
 
@@ -148,6 +164,11 @@
       return 'website';
     }
 
+    // Number/range detection
+    if (type === 'number' || type === 'range') {
+      return 'number';
+    }
+
     return 'unknown';
   }
 
@@ -177,99 +198,137 @@
     return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
   }
 
-  // Function to fill a single field
-  function fillField(field, fieldType, passwordValue = null) {
-    if (!window.dataGenerator) {
-      console.error('Data generator not available');
+  // Function to fill a single field using persona data
+  function fillField(field, fieldType, persona, passwordValue = null) {
+    if (!persona) {
+      console.error('Persona not available');
       return false;
     }
 
-    const generator = window.dataGenerator;
     let value = '';
 
     switch (fieldType) {
       case 'email':
-        value = generator.generateEmail();
+        value = persona.email;
         break;
       case 'phone':
-        value = generator.generatePhoneNumber();
+        value = persona.phone;
         break;
       case 'firstname':
-        value = generator.generateFirstName();
+        value = persona.firstName;
         break;
       case 'lastname':
-        value = generator.generateLastName();
+        value = persona.lastName;
         break;
       case 'fullname':
-        value = generator.generateFullName();
+        value = persona.fullName;
+        break;
+      case 'username':
+        value = persona.username;
         break;
       case 'address':
-        value = generator.generateStreetAddress();
+        value = persona.address;
         break;
       case 'city':
-        value = generator.generateCity();
+        value = persona.city;
         break;
       case 'state':
         // Try to match select options
         if (field.tagName === 'SELECT') {
           const options = Array.from(field.options);
-          const stateOption = options.find(opt => 
-            opt.value && (opt.value.length === 2 || opt.text.includes('State'))
-          );
-          if (stateOption && stateOption.value.length === 2) {
-            value = generator.generateState(true); // Use abbreviation
-          } else {
-            value = generator.generateState(false); // Use full name
+          // Try matching abbreviation first
+          const abbrMatch = options.find(opt => opt.value === persona.stateAbbr || opt.text.trim() === persona.stateAbbr);
+          if (abbrMatch) {
+            field.value = abbrMatch.value;
+            triggerInputEvents(field);
+            return true;
           }
-        } else {
-          value = generator.generateState(false);
+          // Try matching full state name
+          const nameMatch = options.find(opt => opt.value === persona.state || opt.text.trim() === persona.state);
+          if (nameMatch) {
+            field.value = nameMatch.value;
+            triggerInputEvents(field);
+            return true;
+          }
+          // Fallback: pick a random non-placeholder option
+          if (options.length > 1) {
+            const randomIndex = Math.floor(Math.random() * (options.length - 1)) + 1;
+            field.value = options[randomIndex].value;
+            triggerInputEvents(field);
+            return true;
+          }
         }
+        value = persona.state;
         break;
       case 'zip':
-        value = generator.generateZipCode();
+        value = persona.zip;
         break;
       case 'country':
-        value = 'United States';
+        if (field.tagName === 'SELECT') {
+          const options = Array.from(field.options);
+          const countryTerms = ['United States', 'US', 'USA', 'United States of America'];
+          const match = options.find(opt =>
+            countryTerms.some(term => opt.value === term || opt.text.trim() === term)
+          );
+          if (match) {
+            field.value = match.value;
+            triggerInputEvents(field);
+            return true;
+          }
+          // Fallback: pick a random non-placeholder option
+          if (options.length > 1) {
+            const randomIndex = Math.floor(Math.random() * (options.length - 1)) + 1;
+            field.value = options[randomIndex].value;
+            triggerInputEvents(field);
+            return true;
+          }
+        }
+        value = persona.country;
         break;
       case 'date':
-        value = generator.generateDateOfBirth();
+        value = persona.dob;
         break;
       case 'creditcard':
-        value = generator.generateCreditCard().number;
+        value = persona.creditCard;
         break;
       case 'cvv':
-        value = generator.generateCreditCard().cvv;
+        value = persona.cvv;
         break;
       case 'expiry':
         if (field.name && (field.name.includes('month') || field.name.includes('mon'))) {
-          value = generator.generateCreditCard().expiryMonth;
+          value = persona.expiryMonth;
         } else if (field.name && (field.name.includes('year') || field.name.includes('yr'))) {
-          value = generator.generateCreditCard().expiryYear;
+          value = persona.expiryYear;
         } else {
-          value = `${generator.generateCreditCard().expiryMonth}/${generator.generateCreditCard().expiryYear}`;
+          value = `${persona.expiryMonth}/${persona.expiryYear}`;
         }
         break;
       case 'ssn':
-        value = generator.generateSSN();
+        value = persona.ssn;
         break;
       case 'company':
-        value = generator.generateCompany();
+        value = persona.company;
         break;
       case 'website':
-        value = generator.generateWebsite();
+        value = persona.website;
         break;
       case 'password':
         // Use provided password value or generate a new one
         if (passwordValue !== null && passwordValue !== undefined) {
           value = passwordValue;
-          const fieldId = field.id || field.name || field.placeholder || 'unknown';
-          console.log(`[Phil It In] Using provided password for field (${fieldId}): "${passwordValue}"`);
         } else {
           value = generatePassword();
-          const fieldId = field.id || field.name || field.placeholder || 'unknown';
-          console.log(`[Phil It In] Generating new password for field (${fieldId}): "${value}"`);
         }
         break;
+      case 'number': {
+        const min = parseFloat(field.min) || 0;
+        const max = parseFloat(field.max) || 100;
+        const step = parseFloat(field.step) || 1;
+        const range = max - min;
+        const steps = Math.floor(range / step);
+        value = String(min + Math.floor(Math.random() * (steps + 1)) * step);
+        break;
+      }
       default:
         // For unknown fields, generate a generic text
         value = `Sample Text ${Math.floor(Math.random() * 1000)}`;
@@ -291,19 +350,49 @@
       // Randomly check/uncheck
       field.checked = Math.random() > 0.5;
     } else if (field.type === 'radio') {
-      field.checked = true;
+      // Radio buttons are handled at the form level — skip individual handling here
+      return true;
     } else {
-      field.value = value;
+      setNativeValue(field, value);
     }
 
     triggerInputEvents(field);
     return true;
   }
 
+  // Pick one random radio button per group name
+  function fillRadioGroups(container) {
+    const radios = container.querySelectorAll('input[type="radio"]');
+    const groups = {};
+    radios.forEach(radio => {
+      const groupName = radio.name;
+      if (!groupName) return;
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push(radio);
+    });
+    let count = 0;
+    Object.values(groups).forEach(group => {
+      // Skip groups that already have a selection
+      if (group.some(r => r.checked)) return;
+      const pick = group[Math.floor(Math.random() * group.length)];
+      pick.checked = true;
+      triggerInputEvents(pick);
+      count++;
+    });
+    return count;
+  }
+
   // Function to fill all forms on the page
   function fillAllForms() {
     const forms = document.querySelectorAll('form');
     let filledCount = 0;
+
+    if (!window.dataGenerator) {
+      console.error('[Phil It In] Data generator not available');
+      return 0;
+    }
+
+    const generator = window.dataGenerator;
 
     // Prevent form submission while filling
     const preventSubmitHandler = (e) => {
@@ -329,12 +418,14 @@
     });
 
     forms.forEach(form => {
+      // Generate one persona per form for coherent data
+      const persona = generator.generatePersona();
       const fields = form.querySelectorAll('input, select, textarea');
-      
+
       // First, collect all password fields in this form
       const passwordFields = [];
       const otherFields = [];
-      
+
       fields.forEach(field => {
         // Skip hidden fields and submit buttons
         if (field.type === 'hidden' || field.type === 'submit' || field.type === 'button') {
@@ -351,9 +442,14 @@
           return;
         }
 
+        // Skip radio buttons — handled separately per group
+        if (field.type === 'radio') {
+          return;
+        }
+
         // Check if it's a password field - check actual type first, then detectFieldType
         const isPasswordField = field.type === 'password' || detectFieldType(field) === 'password';
-        
+
         if (isPasswordField) {
           passwordFields.push(field);
         } else {
@@ -365,53 +461,54 @@
       // Generate one password for all password fields in this form
       if (passwordFields.length > 0) {
         const password = generatePassword();
-        console.log(`[Phil It In] Found ${passwordFields.length} password field(s) in form, generated password: "${password}"`);
-        passwordFields.forEach((field, index) => {
-          const fieldId = field.id || field.name || field.placeholder || `field-${index}`;
-          console.log(`[Phil It In] Filling password field #${index + 1} (${fieldId}) with password: "${password}"`);
-          fillField(field, 'password', password);
-          console.log(`[Phil It In] Password field #${index + 1} value after fill: "${field.value}"`);
+        passwordFields.forEach(field => {
+          fillField(field, 'password', persona, password);
           filledCount++;
         });
-        // Verify all passwords match
-        const allMatch = passwordFields.every(field => field.value === password);
-        const values = passwordFields.map(f => f.value);
-        console.log(`[Phil It In] Password verification - All fields match: ${allMatch}, Values: [${values.map(v => `"${v}"`).join(', ')}]`);
       }
 
       // Fill other fields normally
       otherFields.forEach(({ field, fieldType }) => {
-        if (fillField(field, fieldType)) {
+        if (fillField(field, fieldType, persona)) {
           filledCount++;
         }
       });
+
+      // Handle radio button groups within this form
+      filledCount += fillRadioGroups(form);
     });
 
     // Also try to fill fields that might not be in forms
+    const persona = generator.generatePersona();
     const standaloneFields = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), select, textarea');
-    
+
     // Collect password fields and other fields separately
     const standalonePasswordFields = [];
     const standaloneOtherFields = [];
-    
+
     standaloneFields.forEach(field => {
       // Skip search fields
       if (isSearchField(field)) {
         return;
       }
-      
+
       if (field.value && field.value.trim() !== '') {
         return;
       }
-      
+
       // Skip fields that are already inside forms (they were handled above)
       if (field.closest('form')) {
         return;
       }
-      
+
+      // Skip radio buttons — handled separately
+      if (field.type === 'radio') {
+        return;
+      }
+
       // Check if it's a password field - check actual type first, then detectFieldType
       const isPasswordField = field.type === 'password' || detectFieldType(field) === 'password';
-      
+
       if (isPasswordField) {
         standalonePasswordFields.push(field);
       } else {
@@ -423,25 +520,36 @@
     // Generate one password for all standalone password fields
     if (standalonePasswordFields.length > 0) {
       const password = generatePassword();
-      console.log(`[Phil It In] Found ${standalonePasswordFields.length} standalone password field(s), generated password: "${password}"`);
-      standalonePasswordFields.forEach((field, index) => {
-        const fieldId = field.id || field.name || field.placeholder || `standalone-field-${index}`;
-        console.log(`[Phil It In] Filling standalone password field #${index + 1} (${fieldId}) with password: "${password}"`);
-        fillField(field, 'password', password);
-        console.log(`[Phil It In] Standalone password field #${index + 1} value after fill: "${field.value}"`);
+      standalonePasswordFields.forEach(field => {
+        fillField(field, 'password', persona, password);
         filledCount++;
       });
-      // Verify all passwords match
-      const allMatch = standalonePasswordFields.every(field => field.value === password);
-      const values = standalonePasswordFields.map(f => f.value);
-      console.log(`[Phil It In] Standalone password verification - All fields match: ${allMatch}, Values: [${values.map(v => `"${v}"`).join(', ')}]`);
     }
 
     // Fill other standalone fields normally
     standaloneOtherFields.forEach(({ field, fieldType }) => {
-      if (fillField(field, fieldType)) {
+      if (fillField(field, fieldType, persona)) {
         filledCount++;
       }
+    });
+
+    // Handle standalone radio button groups (not in forms)
+    const body = document.body;
+    const standaloneRadios = body.querySelectorAll('input[type="radio"]');
+    const standaloneGroups = {};
+    standaloneRadios.forEach(radio => {
+      if (radio.closest('form')) return; // already handled
+      const groupName = radio.name;
+      if (!groupName) return;
+      if (!standaloneGroups[groupName]) standaloneGroups[groupName] = [];
+      standaloneGroups[groupName].push(radio);
+    });
+    Object.values(standaloneGroups).forEach(group => {
+      if (group.some(r => r.checked)) return;
+      const pick = group[Math.floor(Math.random() * group.length)];
+      pick.checked = true;
+      triggerInputEvents(pick);
+      filledCount++;
     });
 
     // Re-enable submit buttons after a short delay
@@ -449,7 +557,7 @@
       allSubmitButtons.forEach((btn, index) => {
         btn.disabled = originalDisabledStates[index];
       });
-      
+
       // Remove form submission prevention
       forms.forEach(form => {
         form.removeEventListener('submit', preventSubmitHandler, true);
@@ -475,4 +583,3 @@
     detectFieldType
   };
 })();
-

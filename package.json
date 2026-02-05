@@ -1,6 +1,6 @@
 {
   "name": "philitin",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Chrome extension to automatically fill out web forms with realistic data",
   "scripts": {
     "package": "node package.js"
