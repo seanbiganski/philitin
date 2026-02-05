@@ -1,5 +1,7 @@
 // Realistic data generator for form filling
-class RealisticDataGenerator {
+// Prevent re-declaration if already loaded
+if (!window.dataGenerator) {
+  class RealisticDataGenerator {
   constructor() {
     this.firstNames = [
       'James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda',
@@ -204,8 +206,9 @@ class RealisticDataGenerator {
     const subdomain = this.random(['www.', '']);
     return `${protocol}${subdomain}${this.random(domains)}`;
   }
+  }
+  
+  // Make it available globally
+  window.dataGenerator = new RealisticDataGenerator();
 }
-
-// Make it available globally
-window.dataGenerator = new RealisticDataGenerator();
 
